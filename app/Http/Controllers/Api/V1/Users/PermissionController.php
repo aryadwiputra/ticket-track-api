@@ -16,10 +16,10 @@ class PermissionController extends BaseController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:permissions-access', only: ['index', 'show']),
-            new Middleware('permission:permissions-create', only: ['store']),
-            new Middleware('permission:permissions-update', only: ['update']),
-            new Middleware('permission:permissions-delete', only: ['destroy']),
+            new Middleware('custom_spatie_forbidden:permissions-access', only: ['index', 'show']),
+            new Middleware('custom_spatie_forbidden:permissions-create', only: ['store']),
+            new Middleware('custom_spatie_forbidden:permissions-update', only: ['update']),
+            new Middleware('custom_spatie_forbidden:permissions-delete', only: ['destroy']),
         ];
     }
     /**

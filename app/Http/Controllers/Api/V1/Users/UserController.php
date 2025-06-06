@@ -27,10 +27,10 @@ class UserController extends BaseController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:users-access', only: ['index', 'show']),
-            new Middleware('permission:users-create', only: ['store']),
-            new Middleware('permission:users-update', only: ['update']),
-            new Middleware('permission:users-delete', only: ['destroy']),
+            new Middleware('custom_spatie_forbidden:users-access', only: ['index', 'show']),
+            new Middleware('custom_spatie_forbidden:users-create', only: ['store']),
+            new Middleware('custom_spatie_forbidden:users-update', only: ['update']),
+            new Middleware('custom_spatie_forbidden:users-delete', only: ['destroy']),
         ];
     }
 
