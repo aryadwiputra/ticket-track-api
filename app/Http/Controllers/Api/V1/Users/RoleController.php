@@ -102,14 +102,25 @@ class RoleController extends BaseController implements HasMiddleware
    */
   public function destroy(string $id)
   {
-    $role = Role::find($id);
+    try {
 
-    if (!$role) {
-      return $this->sendError(404, 'ROLE_NOT_FOUND');
+      $role = Role::find($id);
+
+      if (!$role) {
+        return $this->sendError(404, 'ROLE_NOT_FOUND');
+      }
+
+      // Check if the role is assigned to any user
+      if ($role->users()->count() > 0) {
+        return $this->sendError(422, 'ROLE_CANNOT_BE_DELETED', ['This role is assigned to one or more users.']);
+      }
+
+      // Delete role
+      $role->delete();
+
+      return $this->sendSuccess(200, [], 'ROLE_DELETED_SUCCESSFULLY');
+    } catch (\Exception $e) {
+      return $this->sendError(500, 'ERROR_DELETING_ROLE', [$e->getMessage()]);
     }
-
-    $role->delete();
-
-    return $this->sendSuccess(200, [], 'ROLE_DELETED_SUCCESSFULLY');
   }
 }

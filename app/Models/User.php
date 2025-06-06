@@ -49,6 +49,13 @@ class User extends Authenticatable
         ];
     }
 
+    protected string $guard_name = 'sanctum';
+    protected function getDefaultGuardName(): string
+    {
+        return $this->guard_name;
+    }
+
+
     // Define which attributes to log
     public function getActivitylogOptions(): LogOptions
     {
