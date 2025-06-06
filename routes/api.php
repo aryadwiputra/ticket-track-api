@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Users\PermissionController;
+use App\Http\Controllers\Api\V1\Users\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +15,10 @@ Route::middleware('api')->group(function () {
         Route::middleware('auth:sanctum')->group(function () {
             Route::resource('users', App\Http\Controllers\Api\V1\Users\UserController::class)
                 ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+            Route::resource('permissions', PermissionController::class)->except(['create', 'edit']);
+            Route::resource('roles', RoleController::class)->except(['create', 'edit']);
+
         });
     });
 });
