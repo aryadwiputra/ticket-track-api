@@ -15,10 +15,10 @@ class RoleController extends BaseController implements HasMiddleware
   public static function middleware(): array
   {
     return [
-      new Middleware('permission:roles-access', only: ['index', 'show']),
-      new Middleware('permission:roles-create', only: ['store']),
-      new Middleware('permission:roles-update', only: ['update']),
-      new Middleware('permission:roles-delete', only: ['destroy']),
+      new Middleware('custom_spatie_forbidden:roles-access', only: ['index', 'show']),
+      new Middleware('custom_spatie_forbidden:roles-create', only: ['store']),
+      new Middleware('custom_spatie_forbidden:roles-update', only: ['update']),
+      new Middleware('custom_spatie_forbidden:roles-delete', only: ['destroy']),
     ];
   }
 
