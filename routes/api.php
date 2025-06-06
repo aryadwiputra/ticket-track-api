@@ -15,10 +15,11 @@ Route::middleware('api')->group(function () {
         Route::middleware('auth:sanctum')->group(function () {
             Route::resource('users', App\Http\Controllers\Api\V1\Users\UserController::class)
                 ->only(['index', 'store', 'show', 'update', 'destroy']);
-
             Route::resource('permissions', PermissionController::class)->except(['create', 'edit']);
             Route::resource('roles', RoleController::class)->except(['create', 'edit']);
 
+            Route::resource('categories', App\Http\Controllers\Api\V1\Master\CategoryController::class)
+                ->except(['create', 'edit']);
         });
     });
 });
