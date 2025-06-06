@@ -8,10 +8,13 @@ use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpFoundation\Response;
 
-class UserController extends Controller
+
+class UserController extends Controller implements HasMiddleware
 {
     protected $userService;
 
@@ -20,13 +23,21 @@ class UserController extends Controller
         $this->userService = $userService;
     }
 
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:users.view', only: ['index', 'show']),
+            new Middleware('permission:users.create', only: ['store']),
+            new Middleware('permission:users.update', only: ['update']),
+            new Middleware('permission:users.delete', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        // Gate::authorize('viewAny', User::class); // RBAC check
-
         try {
             $perPage = $request->input('per_page', 15);
             $sortBy = $request->input('sort_by', 'created_at');
@@ -38,6 +49,7 @@ class UserController extends Controller
                 'sort_order' => $sortOrder,
                 'search' => $request->input('search'),
             ]);
+
 
             return UserResource::collection($users)->response()->setStatusCode(Response::HTTP_OK);
         } catch (\Exception $e) {
@@ -53,10 +65,16 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
-        // Gate::authorize('create', arguments: User::class); // RBAC check
-
         try {
             $user = $this->userService->createUser($request->validated());
+
+            // Manual logging for custom details
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($user)
+                ->withProperties(['attributes' => $request->validated()])
+                ->log('Created user with email: ' . $user->email);
+
             return (new UserResource($user))
                 ->response()
                 ->setStatusCode(Response::HTTP_CREATED);
@@ -75,8 +93,6 @@ class UserController extends Controller
     {
         try {
             $user = $this->userService->getUserById($id);
-            Gate::authorize('view', $user); // RBAC check
-
             return (new UserResource($user))
                 ->response()
                 ->setStatusCode(Response::HTTP_OK);
@@ -95,9 +111,15 @@ class UserController extends Controller
     {
         try {
             $user = $this->userService->getUserById($id);
-            // Gate::authorize('update', $user); // RBAC check
-
             $user = $this->userService->updateUser($id, $request->validated());
+
+            // Manual logging for custom details
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($user)
+                ->withProperties(['attributes' => $request->validated()])
+                ->log('Updated user with email: ' . $user->email);
+
             return (new UserResource($user))
                 ->response()
                 ->setStatusCode(Response::HTTP_OK);
@@ -115,9 +137,6 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         try {
-            $user = $this->userService->getUserById($id);
-            // Gate::authorize('delete', $user); // RBAC check
-
             $this->userService->deleteUser($id);
             return response()->json(null, Response::HTTP_NO_CONTENT);
         } catch (\Exception $e) {
@@ -125,6 +144,29 @@ class UserController extends Controller
                 'message' => 'Error deleting user',
                 'error' => $e->getMessage(),
             ], Response::HTTP_NOT_FOUND);
+        }
+    }
+    public function activityLog(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 15);
+            $logs = Activity::where('log_name', 'user')
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'data' => $logs->items(),
+                'meta' => [
+                    'current_page' => $logs->currentPage(),
+                    'total' => $logs->total(),
+                    'per_page' => $logs->perPage(),
+                ],
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving activity logs',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

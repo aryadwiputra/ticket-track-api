@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Users\PermissionController;
 use App\Http\Controllers\Api\V1\Users\RoleController;
+use App\Http\Controllers\Api\V1\Users\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,8 +14,10 @@ Route::middleware('api')->group(function () {
         Route::post('register', App\Http\Controllers\Api\V1\RegisterController::class)->name('register');
 
         Route::middleware('auth:sanctum')->group(function () {
-            Route::resource('users', App\Http\Controllers\Api\V1\Users\UserController::class)
+            Route::resource('users', UserController::class)
                 ->only(['index', 'store', 'show', 'update', 'destroy']);
+            Route::get('/users/activity-log', [UserController::class, 'activityLog'])->name('users.activity-log');
+
             Route::resource('permissions', PermissionController::class)->except(['create', 'edit']);
             Route::resource('roles', RoleController::class)->except(['create', 'edit']);
 
