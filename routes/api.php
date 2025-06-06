@@ -4,8 +4,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->group(function () {
-    Route::post('/login', App\Http\Controllers\Api\V1\LoginController::class)
-        ->name('api.login');
-    Route::post('/register', App\Http\Controllers\Api\V1\RegisterController::class)
-        ->name('api.register');
+    Route::name('api.v1.')->prefix('v1')->group(function () {
+
+        Route::post('login', App\Http\Controllers\Api\V1\LoginController::class)->name('login');
+
+        Route::post('register', App\Http\Controllers\Api\V1\RegisterController::class)->name('register');
+
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::resource('users', App\Http\Controllers\Api\V1\Users\UserController::class)
+                ->only(['index', 'store', 'show', 'update', 'destroy']);
+        });
+    });
 });
