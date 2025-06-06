@@ -13,10 +13,10 @@ class BaseController extends Controller
      * @param int $code
      * @param string $status
      * @param string $error
-     * @param array $errorMessages
+     * @param mixed $errorMessages
      * @return \Illuminate\Http\JsonResponse
      */
-    public function sendError($code = 404, $status = 'error', $error = 'Error', $errorMessages = [])
+    public function sendError($code = 404, $error = 'Error', $errorMessages = [])
     {
         $response = [
             'timestamp' => now()->toIso8601String(),
@@ -35,11 +35,11 @@ class BaseController extends Controller
      * Return a success response.
      *
      * @param int $code
-     * @param array $data
+     * @param mixed $data
      * @param string $message
      * @return \Illuminate\Http\JsonResponse
      */
-    public function sendSuccess($code = 200, $message = '', $data = [])
+    public function sendSuccess($code = 200, $data, $message = 'SUCCESS_GET_DATA')
     {
         $response = [
             'timestamp' => now()->toIso8601String(),

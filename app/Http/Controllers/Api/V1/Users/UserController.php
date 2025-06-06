@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Users;
 
+use App\Http\Controllers\Api\V1\BaseController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
@@ -14,7 +15,7 @@ use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpFoundation\Response;
 
 
-class UserController extends Controller implements HasMiddleware
+class UserController extends BaseController implements HasMiddleware
 {
     protected $userService;
 
@@ -26,10 +27,10 @@ class UserController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:users.view', only: ['index', 'show']),
-            new Middleware('permission:users.create', only: ['store']),
-            new Middleware('permission:users.update', only: ['update']),
-            new Middleware('permission:users.delete', only: ['destroy']),
+            new Middleware('permission:users-access', only: ['index', 'show']),
+            new Middleware('permission:users-create', only: ['store']),
+            new Middleware('permission:users-update', only: ['update']),
+            new Middleware('permission:users-delete', only: ['destroy']),
         ];
     }
 
@@ -50,13 +51,17 @@ class UserController extends Controller implements HasMiddleware
                 'search' => $request->input('search'),
             ]);
 
-
-            return UserResource::collection($users)->response()->setStatusCode(Response::HTTP_OK);
+            return $this->sendSuccess(
+                Response::HTTP_OK,
+                UserResource::collection($users),
+                'USERS_RETRIEVED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error retrieving users',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->sendError(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Error retrieving users',
+                [$e->getMessage()]
+            );
         }
     }
 
@@ -75,14 +80,17 @@ class UserController extends Controller implements HasMiddleware
                 ->withProperties(['attributes' => $request->validated()])
                 ->log('Created user with email: ' . $user->email);
 
-            return (new UserResource($user))
-                ->response()
-                ->setStatusCode(Response::HTTP_CREATED);
+            return $this->sendSuccess(
+                Response::HTTP_CREATED,
+                UserResource::make($user),
+                'USER_CREATED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error creating user',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->sendError(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Error creating user',
+                [$e->getMessage()]
+            );
         }
     }
 
@@ -93,14 +101,17 @@ class UserController extends Controller implements HasMiddleware
     {
         try {
             $user = $this->userService->getUserById($id);
-            return (new UserResource($user))
-                ->response()
-                ->setStatusCode(Response::HTTP_OK);
+            return $this->sendSuccess(
+                Response::HTTP_OK,
+                new UserResource($user),
+                'USER_RETRIEVED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'User not found or error occurred',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_NOT_FOUND);
+            return $this->sendError(
+                Response::HTTP_NOT_FOUND,
+                'ERROR_RETRIEVING_USER',
+                [$e->getMessage()]
+            );
         }
     }
 
@@ -120,14 +131,17 @@ class UserController extends Controller implements HasMiddleware
                 ->withProperties(['attributes' => $request->validated()])
                 ->log('Updated user with email: ' . $user->email);
 
-            return (new UserResource($user))
-                ->response()
-                ->setStatusCode(Response::HTTP_OK);
+            return $this->sendSuccess(
+                Response::HTTP_OK,
+                new UserResource($user),
+                'USER_UPDATED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error updating user',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_NOT_FOUND);
+            return $this->sendError(
+                Response::HTTP_NOT_FOUND,
+                'ERROR_UPDATING_USER',
+                [$e->getMessage()]
+            );
         }
     }
 
@@ -138,14 +152,25 @@ class UserController extends Controller implements HasMiddleware
     {
         try {
             $this->userService->deleteUser($id);
-            return response()->json(null, Response::HTTP_NO_CONTENT);
+            // Manual logging for custom details
+            activity()
+                ->causedBy(auth()->user())
+                ->withProperties(['user_id' => $id])
+                ->log('Deleted user with ID: ' . $id);
+            return $this->sendSuccess(
+                Response::HTTP_OK,
+                null,
+                'USER_DELETED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error deleting user',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_NOT_FOUND);
+            return $this->sendError(
+                Response::HTTP_NOT_FOUND,
+                'ERROR_DELETING_USER',
+                [$e->getMessage()]
+            );
         }
     }
+
     public function activityLog(Request $request)
     {
         try {
@@ -154,19 +179,17 @@ class UserController extends Controller implements HasMiddleware
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
-            return response()->json([
-                'data' => $logs->items(),
-                'meta' => [
-                    'current_page' => $logs->currentPage(),
-                    'total' => $logs->total(),
-                    'per_page' => $logs->perPage(),
-                ],
-            ], Response::HTTP_OK);
+            return $this->sendSuccess(
+                Response::HTTP_OK,
+                $logs,
+                'USER_ACTIVITY_LOGS_RETRIEVED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error retrieving activity logs',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->sendError(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Error retrieving activity logs',
+                [$e->getMessage()]
+            );
         }
     }
 }

@@ -16,7 +16,10 @@ class PermissionController extends BaseController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('auth:api'),
+            new Middleware('permission:permissions-access', only: ['index', 'show']),
+            new Middleware('permission:permissions-create', only: ['store']),
+            new Middleware('permission:permissions-update', only: ['update']),
+            new Middleware('permission:permissions-delete', only: ['destroy']),
         ];
     }
     /**
@@ -26,7 +29,7 @@ class PermissionController extends BaseController implements HasMiddleware
     {
         $permissions = Permission::all();
 
-        return $this->sendSuccess(200, $permissions);
+        return $this->sendSuccess(200, $permissions->toArray(), 'PERMISSIONS_RETRIEVED_SUCCESSFULLY');
     }
     /**
      * Show the form for creating a new resource.
@@ -46,12 +49,12 @@ class PermissionController extends BaseController implements HasMiddleware
         ]);
 
         if ($validator->fails()) {
-            return $this->sendError(422, 'error', $validator->errors());
+            return $this->sendError(422, 'error', $validator->errors()->all());
         }
 
         $permission = Permission::create($request->all());
 
-        return $this->sendSuccess(200, 'success', $permission);
+        return $this->sendSuccess(200, $permission->toArray(), 'PERMISSION_CREATED_SUCCESSFULLY');
     }
 
     /**
@@ -62,10 +65,10 @@ class PermissionController extends BaseController implements HasMiddleware
         $permission = Permission::find($id);
 
         if (!$permission) {
-            return $this->sendError(404, 'not_found', 'Permission not found');
+            return $this->sendError(404, 'PERMISSION_NOT_FOUND');
         }
 
-        return $this->sendSuccess(200, 'success', $permission);
+        return $this->sendSuccess(200, $permission->toArray(), 'PERMISSION_RETRIEVED_SUCCESSFULLY');
     }
 
     /**
@@ -86,20 +89,20 @@ class PermissionController extends BaseController implements HasMiddleware
         ]);
 
         if ($validator->fails()) {
-            return $this->sendError(422, 'error', $validator->errors());
+            return $this->sendError(422, 'error', $validator->errors()->all());
         }
 
         $permission = Permission::find($id);
 
         if (!$permission) {
-            return $this->sendError(404, 'not_found', 'Permission not found');
+            return $this->sendError(404, 'PERMISSION_NOT_FOUND');
         }
 
         $permission->update([
             "name" => $request->name,
         ]);
 
-        return $this->sendSuccess(200, 'success', $permission);
+        return $this->sendSuccess(200, $permission->toArray(), 'PERMISSION_UPDATED_SUCCESSFULLY');
     }
 
     /**
@@ -110,11 +113,11 @@ class PermissionController extends BaseController implements HasMiddleware
         $permission = Permission::find($id);
 
         if (!$permission) {
-            return $this->sendError(404, 'not_found', 'Permission not found');
+            return $this->sendError(404, 'NOT_FOUND');
         }
 
         $permission->delete();
 
-        return $this->sendSuccess(200, 'success', []);
+        return $this->sendSuccess(200, [], 'PERMISSION_DELETED_SUCCESSFULLY');
     }
 }

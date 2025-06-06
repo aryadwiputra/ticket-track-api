@@ -7,8 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Validator;
-use Reflector;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 
@@ -17,7 +15,10 @@ class RoleController extends BaseController implements HasMiddleware
   public static function middleware(): array
   {
     return [
-      new Middleware('auth:api'),
+      new Middleware('permission:roles-access', only: ['index', 'show']),
+      new Middleware('permission:roles-create', only: ['store']),
+      new Middleware('permission:roles-update', only: ['update']),
+      new Middleware('permission:roles-delete', only: ['destroy']),
     ];
   }
 
@@ -25,7 +26,7 @@ class RoleController extends BaseController implements HasMiddleware
   {
     $roles = Role::all();
 
-    return $this->sendSuccess(200, $roles);
+    return $this->sendSuccess(200, $roles->toArray(), 'ROLES_RETRIEVED_SUCCESSFULLY');
   }
 
   /**
@@ -43,12 +44,12 @@ class RoleController extends BaseController implements HasMiddleware
     ]);
 
     if ($validator->fails()) {
-      return $this->sendError(422, 'error', $validator->errors());
+      return $this->sendError(422, 'error', $validator->errors()->all());
     }
 
     $role = Role::create($request->all());
 
-    return $this->sendSuccess(200, 'success', $role);
+    return $this->sendSuccess(200, $role->toArray(), 'ROLE_CREATED_SUCCESSFULLY');
   }
 
   public function show(string $id)
@@ -56,10 +57,10 @@ class RoleController extends BaseController implements HasMiddleware
     $role = Role::find($id);
 
     if (!$role) {
-      return $this->sendError(404, 'not_found', 'Role not found');
+      return $this->sendError(404, 'ROLE_NOT_FOUND');
     }
 
-    return $this->sendSuccess(200, 'success', $role);
+    return $this->sendSuccess(200, $role, 'ROLE_RETRIEVED_SUCCESSFULLY');
   }
 
   /**
@@ -80,20 +81,20 @@ class RoleController extends BaseController implements HasMiddleware
     ]);
 
     if ($validator->fails()) {
-      return $this->sendError(422, 'error', $validator->errors());
+      return $this->sendError(422, 'error', $validator->errors()->all());
     }
 
     $role = Role::find($id);
 
     if (!$role) {
-      return $this->sendError(404, 'not_found', 'Role not found');
+      return $this->sendError(404, 'ROLE_NOT_FOUND');
     }
 
     $role->update([
       "name" => $request->name,
     ]);
 
-    return $this->sendSuccess(200, 'success', $role);
+    return $this->sendSuccess(200, $role, 'ROLE_UPDATED_SUCCESSFULLY');
   }
 
   /**
@@ -104,11 +105,11 @@ class RoleController extends BaseController implements HasMiddleware
     $role = Role::find($id);
 
     if (!$role) {
-      return $this->sendError(404, 'not_found', 'Role not found');
+      return $this->sendError(404, 'ROLE_NOT_FOUND');
     }
 
     $role->delete();
 
-    return $this->sendSuccess(200, 'success', []);
+    return $this->sendSuccess(200, [], 'ROLE_DELETED_SUCCESSFULLY');
   }
 }
