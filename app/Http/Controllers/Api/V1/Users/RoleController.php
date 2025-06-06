@@ -49,6 +49,11 @@ class RoleController extends BaseController implements HasMiddleware
 
     $role = Role::create($request->all());
 
+    activity()
+      ->causedBy(auth()->user())
+      ->performedOn($role)
+      ->log('Role created: ' . $role->name);
+
     return $this->sendSuccess(200, $role->toArray(), 'ROLE_CREATED_SUCCESSFULLY');
   }
 
@@ -94,6 +99,12 @@ class RoleController extends BaseController implements HasMiddleware
       "name" => $request->name,
     ]);
 
+    activity()
+      ->causedBy(auth()->user())
+      ->performedOn($role)
+      ->withProperties(['attributes' => $request->all()])
+      ->log('Role updated: ' . $role->name);
+
     return $this->sendSuccess(200, $role, 'ROLE_UPDATED_SUCCESSFULLY');
   }
 
@@ -115,8 +126,14 @@ class RoleController extends BaseController implements HasMiddleware
         return $this->sendError(422, 'ROLE_CANNOT_BE_DELETED', ['This role is assigned to one or more users.']);
       }
 
+      activity()
+        ->causedBy(auth()->user())
+        ->performedOn($role)
+        ->log('Role deleted: ' . $role->name);
+
       // Delete role
       $role->delete();
+
 
       return $this->sendSuccess(200, [], 'ROLE_DELETED_SUCCESSFULLY');
     } catch (\Exception $e) {
