@@ -2,23 +2,36 @@
 
 namespace App\Http\Controllers\Api\V1\Master;
 
+use App\Http\Controllers\Api\V1\BaseController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Categories\StoreCategoryRequest;
 use App\Http\Requests\Categories\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Services\CategoryService;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Gate;
+use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpFoundation\Response;
 
-class CategoryController extends Controller
+class CategoryController extends BaseController implements HasMiddleware
 {
     protected $categoryService;
 
     public function __construct(CategoryService $categoryService)
     {
         $this->categoryService = $categoryService;
-        // $this->middleware('auth:sanctum');
+    }
+
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('custom_spatie_forbidden:categories-access', only: ['index', 'show']),
+            new Middleware('custom_spatie_forbidden:categories-create', only: ['store']),
+            new Middleware('custom_spatie_forbidden:categories-update', only: ['update']),
+            new Middleware('custom_spatie_forbidden:categories-delete', only: ['destroy']),
+        ];
     }
 
     /**
@@ -26,8 +39,6 @@ class CategoryController extends Controller
      */
     public function index(Request $request)
     {
-        // Gate::authorize('viewAny', Category::class);
-
         try {
             $perPage = $request->input('per_page', 15);
             $sortBy = $request->input('sort_by', 'sort_order');
@@ -41,12 +52,9 @@ class CategoryController extends Controller
                 'search' => $search,
             ]);
 
-            return CategoryResource::collection($categories)->response()->setStatusCode(Response::HTTP_OK);
+            return $this->sendSuccess(200, CategoryResource::collection($categories), 'CATEGORIES_RETRIEVED_SUCCESSFULLY');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error retrieving categories',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->sendError(500, 'Error retrieving categories', [$e->getMessage()]);
         }
     }
 
@@ -55,25 +63,22 @@ class CategoryController extends Controller
      */
     public function store(StoreCategoryRequest $request)
     {
-        // Gate::authorize('create', Category::class);
-
         try {
             $category = $this->categoryService->createCategory($request->validated());
 
-            // activity()
-            //     ->causedBy(auth()->user())
-            //     ->performedOn($category)
-            //     ->withProperties(['attributes' => $request->validated()])
-            //     ->log('Created category: ' . $category->name);
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($category)
+                ->withProperties(['attributes' => $request->validated()])
+                ->log('Created category: ' . $category->name);
 
-            return (new CategoryResource($category))
-                ->response()
-                ->setStatusCode(Response::HTTP_CREATED);
+            return $this->sendSuccess(
+                201,
+                new CategoryResource($category),
+                'CATEGORY_CREATED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error creating category',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->sendError(500, 'Error creating category', [$e->getMessage()]);
         }
     }
 
@@ -84,16 +89,10 @@ class CategoryController extends Controller
     {
         try {
             $category = $this->categoryService->getCategoryById($id);
-            Gate::authorize('view', $category);
 
-            return (new CategoryResource($category))
-                ->response()
-                ->setStatusCode(Response::HTTP_OK);
+            return $this->sendSuccess(200, new CategoryResource($category), 'CATEGORY_RETRIEVED_SUCCESSFULLY');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Category not found or error occurred',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_NOT_FOUND);
+            return $this->sendError(404, 'ERROR_RETRIEVING_CATEGORY', [$e->getMessage()]);
         }
     }
 
@@ -104,24 +103,22 @@ class CategoryController extends Controller
     {
         try {
             $category = $this->categoryService->getCategoryById($id);
-            // Gate::authorize('update', $category);
 
             $category = $this->categoryService->updateCategory($id, $request->validated());
 
-            // activity()
-            //     ->causedBy(auth()->user())
-            //     ->performedOn($category)
-            //     ->withProperties(['attributes' => $request->validated()])
-            //     ->log('Updated category: ' . $category->name);
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($category)
+                ->withProperties(['attributes' => $request->validated()])
+                ->log('Updated category: ' . $category->name);
 
-            return (new CategoryResource($category))
-                ->response()
-                ->setStatusCode(Response::HTTP_OK);
+            return $this->sendSuccess(
+                200,
+                new CategoryResource($category),
+                'CATEGORY_UPDATED_SUCCESSFULLY'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error updating category',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_NOT_FOUND);
+            return $this->sendError(404, 'ERROR_UPDATING_CATEGORY', [$e->getMessage()]);
         }
     }
 
@@ -132,50 +129,34 @@ class CategoryController extends Controller
     {
         try {
             $category = $this->categoryService->getCategoryById($id);
-            // Gate::authorize('delete', $category);
 
             $this->categoryService->deleteCategory($id);
 
-            // activity()
-            //     ->causedBy(auth()->user())
-            //     ->performedOn($category)
-            //     ->log('Deleted category: ' . $category->name);
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($category)
+                ->log('Deleted category: ' . $category->name);
 
-            return response()->json(null, Response::HTTP_NO_CONTENT);
+            return $this->sendSuccess(204, null, 'CATEGORY_DELETED_SUCCESSFULLY');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error deleting category',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_NOT_FOUND);
+            return $this->sendError(404, 'ERROR_DELETING_CATEGORY', [$e->getMessage()]);
         }
     }
 
     /**
      * Retrieve activity logs for categories.
      */
-    // public function activityLog(Request $request)
-    // {
-    //     Gate::authorize('viewAny', Activity::class);
+    public function activityLog(Request $request)
+    {
+        try {
+            $perPage = $request->input('per_page', 15);
+            $logs = Activity::where('log_name', 'category')
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
 
-    //     try {
-    //         $perPage = $request->input('per_page', 15);
-    //         $logs = Activity::where('log_name', 'category')
-    //             ->orderBy('created_at', 'desc')
-    //             ->paginate($perPage);
-
-    //         return response()->json([
-    //             'data' => $logs->items(),
-    //             'meta' => [
-    //                 'current_page' => $logs->currentPage(),
-    //                 'total' => $logs->total(),
-    //                 'per_page' => $logs->perPage(),
-    //             ],
-    //         ], Response::HTTP_OK);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'message' => 'Error retrieving activity logs',
-    //             'error' => $e->getMessage(),
-    //         ], Response::HTTP_INTERNAL_SERVER_ERROR);
-    //     }
-    // }
+            return $this->sendSuccess(200, $logs, 'ACTIVITY_LOGS_RETRIEVED_SUCCESSFULLY');
+        } catch (\Exception $e) {
+            return $this->sendError(500, 'Error retrieving activity logs', [$e->getMessage()]);
+        }
+    }
 }
