@@ -20,7 +20,6 @@ class LoginController extends BaseController
             $validator = Validator::make($request->all(), [
                 "email" => "required",
                 "password" => "required",
-                'password_confirmation' => 'required|same:password',
             ]);
 
             if ($validator->fails()) {
@@ -37,8 +36,8 @@ class LoginController extends BaseController
                 return $this->sendError(422, 'CREDENTIALS_NOT_MATCH', "Credentials doesn't match");
             } else {
                 $data = [
+                    'token' => $user->createToken('auth_token')->plainTextToken,
                     'user' => UserResource::make($user),
-                    'token' => $user->createToken('MyApp')->accessToken
                 ];
                 return $this->sendSuccess(200, 'LOGIN_SUCCESS', $data);
             }
