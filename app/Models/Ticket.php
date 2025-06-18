@@ -42,6 +42,15 @@ class Ticket extends Model
         'completed_at' => 'datetime',
     ];
 
+
+    /**
+     * Get the replies for the ticket.
+     */
+    public function replies()
+    {
+        return $this->hasMany(TicketReply::class);
+    }
+
     /**
      * Get the user who created the ticket.
      */

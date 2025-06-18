@@ -36,6 +36,11 @@ class PermissionSeeder extends Seeder
             'tickets-create',
             'tickets-update',
             'tickets-delete',
+            'ticket-replies-access',
+            'ticket-replies-data',
+            'ticket-replies-create',
+            'ticket-replies-update',
+            'ticket-replies-delete',
         ])->each(fn($item) => Permission::create(['name' => $item]));
     }
 }

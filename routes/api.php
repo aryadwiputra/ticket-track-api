@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Master\CategoryController;
 use App\Http\Controllers\Api\V1\Master\TicketController;
+use App\Http\Controllers\Api\V1\Master\TicketReplyController;
 use App\Http\Controllers\Api\V1\Users\PermissionController;
 use App\Http\Controllers\Api\V1\Users\RoleController;
 use App\Http\Controllers\Api\V1\Users\UserController;
@@ -28,6 +29,9 @@ Route::middleware('api')->group(function () {
             // Ticket Routes
             Route::apiResource('tickets', TicketController::class)->except(['create', 'edit']);
             Route::get('tickets/activity-log', [TicketController::class, 'activityLog']);
+            // Nested Route
+            Route::apiResource('tickets.replies', TicketReplyController::class);
+
         });
     });
 });
