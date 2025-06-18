@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
+            $table->string('code')->unique();
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('status', ['open', 'in_progress', 'closed', 'reopened'])->default('open');

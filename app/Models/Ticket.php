@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -18,6 +19,7 @@ class Ticket extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'ticket',
         'title',
         'description',
         'status',
@@ -54,6 +56,43 @@ class Ticket extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    /**
+     * The "booted" method of the model.
+     * Ini akan dijalankan saat model di-boot.
+     *
+     * @return void
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Event listener yang akan dijalankan sebelum model dibuat (disimpan ke DB)
+        static::creating(function ($ticket) {
+            $ticket->code = self::generateUniqueTicketCode();
+        });
+    }
+
+    /**
+     * Generate a unique ticket code.
+     * Format: TIC-YYYYMMDD-RANDOMSTRING
+     *
+     * @return string
+     */
+    protected static function generateUniqueTicketCode(): string
+    {
+        $prefix = 'TIC-';
+        $datePart = now()->format('Ymd'); // Bagian tanggal
+        $randomPartLength = 6; // Panjang string acak
+
+        do {
+            // Hasilkan string acak uppercase
+            $randomPart = Str::upper(Str::random($randomPartLength));
+            $code = $prefix . $datePart . '-' . $randomPart;
+        } while (self::where('code', $code)->exists()); // Pastikan kode unik di database
+
+        return $code;
     }
 
     /**

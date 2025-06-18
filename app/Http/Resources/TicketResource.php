@@ -16,6 +16,7 @@ class TicketResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'code' => $this->code,
             'title' => $this->title,
             'description' => $this->description,
             'status' => $this->status->value, // Access enum value

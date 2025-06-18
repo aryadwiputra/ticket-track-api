@@ -84,7 +84,8 @@ class TicketController extends BaseController implements HasMiddleware
                 ->causedBy(auth()->user())
                 ->performedOn($ticket)
                 ->withProperties(['attributes' => $request->validated()])
-                ->log('Created ticket: ' . $ticket->title);
+                // Perbarui pesan log untuk menyertakan kode tiket
+                ->log('Created ticket ' . $ticket->code . ': ' . $ticket->title);
 
             return $this->sendSuccess(
                 Response::HTTP_CREATED,
@@ -172,14 +173,17 @@ class TicketController extends BaseController implements HasMiddleware
     public function destroy(string $id)
     {
         try {
-            $ticket = $this->ticketService->getTicketById($id); // Get ticket before deleting for logging
-            $this->ticketService->deleteTicket($id);
+            $ticket = $this->ticketService->getTicketById($id); // Dapatkan tiket sebelum dihapus untuk logging
 
             // Manual logging for custom details
             activity()
                 ->causedBy(auth()->user())
-                ->withProperties(['ticket_id' => $id, 'ticket_title' => $ticket->title])
-                ->log('Deleted ticket: ' . $ticket->title);
+                // Tambahkan 'ticket_code' ke properti log
+                ->withProperties(['ticket_id' => $id, 'ticket_code' => $ticket->code, 'ticket_title' => $ticket->title])
+                // Perbarui pesan log untuk menyertakan kode tiket
+                ->log('Deleted ticket ' . $ticket->code . ': ' . $ticket->title);
+
+            $this->ticketService->deleteTicket($id);
 
             return $this->sendSuccess(
                 Response::HTTP_OK,
