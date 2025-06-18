@@ -33,8 +33,8 @@ class Ticket extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'status' => \App\Enums\TicketStatusEnum::class, // Assuming you might use enums
-        'priority' => \App\Enums\TicketPriorityEnum::class, // Assuming you might use enums
+        'status' => \App\Enums\Tickets\TicketStatusEnum::class, // Assuming you might use enums
+        'priority' => \App\Enums\Tickets\TicketPriorityEnum::class, // Assuming you might use enums
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'completed_at' => 'datetime',

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Master\CategoryController;
+use App\Http\Controllers\Api\V1\Master\TicketController;
 use App\Http\Controllers\Api\V1\Users\PermissionController;
 use App\Http\Controllers\Api\V1\Users\RoleController;
 use App\Http\Controllers\Api\V1\Users\UserController;
@@ -20,8 +22,12 @@ Route::middleware('api')->group(function () {
             Route::resource('permissions', PermissionController::class)->except(['create', 'edit']);
             Route::resource('roles', RoleController::class)->except(['create', 'edit']);
 
-            Route::resource('categories', App\Http\Controllers\Api\V1\Master\CategoryController::class)
+            Route::resource('categories', CategoryController::class)
                 ->except(['create', 'edit']);
+
+            // Ticket Routes
+            Route::apiResource('tickets', TicketController::class)->except(['create', 'edit']);
+            Route::get('tickets/activity-log', [TicketController::class, 'activityLog']);
         });
     });
 });
