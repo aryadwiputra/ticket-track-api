@@ -57,7 +57,7 @@ class TicketController extends BaseController implements HasMiddleware
 
             return $this->sendSuccess(
                 Response::HTTP_OK,
-                TicketResource::collection($tickets),
+                $tickets,
                 'TICKETS_RETRIEVED_SUCCESSFULLY'
             );
         } catch (\Exception $e) {
