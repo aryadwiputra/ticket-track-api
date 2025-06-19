@@ -20,6 +20,8 @@ class TicketService
     $sortBy = $filters['sort_by'] ?? 'created_at';
     $sortOrder = $filters['sort_order'] ?? 'desc';
     $search = $filters['search'] ?? null;
+    $status = $filters['status'] ?? null;
+    $priority = $filters['priority'] ?? null;
 
     $query = Ticket::query();
 
@@ -28,6 +30,14 @@ class TicketService
         $q->where('title', 'like', '%' . $search . '%')
           ->orWhere('description', 'like', '%' . $search . '%');
       });
+    }
+
+    if ($status) {
+      $query->where('status', $status);
+    }
+
+    if ($priority) {
+      $query->where('priority', $priority);
     }
 
     // Eager load relationships to avoid N+1 problem in resource

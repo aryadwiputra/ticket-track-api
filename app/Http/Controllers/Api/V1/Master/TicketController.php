@@ -47,12 +47,16 @@ class TicketController extends BaseController implements HasMiddleware
             $sortBy = $request->input('sort_by', 'created_at');
             $sortOrder = $request->input('sort_order', 'desc');
             $search = $request->input('search');
+            $filterStatus = $request->input('status'); // Tambahkan ini
+            $filterPriority = $request->input('priority'); // Tambahkan ini
 
             $tickets = $this->ticketService->getTickets([
                 'per_page' => $perPage,
                 'sort_by' => $sortBy,
                 'sort_order' => $sortOrder,
                 'search' => $search,
+                'status' => $filterStatus, // Tambahkan ini
+                'priority' => $filterPriority, // Tambahkan ini
             ]);
 
             return $this->sendSuccess(
