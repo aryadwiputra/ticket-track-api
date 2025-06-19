@@ -29,7 +29,7 @@ class RegisterController extends BaseController
 
             $input = $request->all();
             $input['password'] = bcrypt($input['password']);
-            User::create($input)->sendEmailVerificationNotification();
+            // User::create($input)->sendEmailVerificationNotification();
 
             return $this->sendSuccess(201, 'REGISTER_SUCCESS', []);
         } catch (\Exception $e) {
